@@ -91,17 +91,11 @@ def rebuild_failed():
         print(f"[{i}/{len(all_docs)}] {title:40s} ", end='', flush=True)
         
         try:
-            # 截断文本（保守策略）
-            text_for_embedding = content
-            if len(content) > 1500:
-                text_for_embedding = content[:1500]
-                print(f"[截断] ", end='', flush=True)
+            # 截断文本（非常保守的策略）
+            # API 对中文有非常严格的限制，只取前 500 字符
+            text_for_embedding = content[:500]
             
-            # 再次检查字节数
-            text_bytes = text_for_embedding.encode('utf-8')
-            if len(text_bytes) > 4000:
-                text_for_embedding = text_bytes[:4000].decode('utf-8', errors='ignore')
-                print(f"[字节] ", end='', flush=True)
+            print(f"[{len(content)}→{len(text_for_embedding)}] ", end='', flush=True)
             
             start_time = time.time()
             embedding = generate_embedding(text_for_embedding)

@@ -167,9 +167,15 @@ query_test.py                  # 步骤3：交互式测试
 
 ### 2. API 文本长度限制
 
-**问题**：某些菜谱内容超过 2000 字符，导致 `413 Request Entity Too Large`
+**问题**：某些菜谱内容超过 API 限制，导致 `413 Request Entity Too Large`
 
-**解决**：自动截断到 2000 字符（在 `build_vector_index.py` 中实现）
+**原因**：Silicon Flow API 对中文有非常严格的限制，约 500 字符
+
+**解决**：
+- 方案1：自动截断到 500 字符（已实现）
+- 方案2：使用 `rebuild_failed.py` 重新生成失败的向量
+
+**注意**：即使截断，前 500 字符通常也包含了菜谱的核心信息
 
 ### 3. API 密钥未设置
 
