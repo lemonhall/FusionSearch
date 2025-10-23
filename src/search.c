@@ -496,6 +496,39 @@ size_t ffi_bm25_search(uintptr_t index_ptr,
     return count;
 }
 
+// UTF-8安全的字符串复制：确保不在多字节字符中间截断
+static void utf8_safe_copy(char* dest, const char* src, size_t dest_size) {
+    if (dest_size == 0) return;
+    
+    size_t src_len = strlen(src);
+    
+    // 如果源字符串完全放得下，直接复制
+    if (src_len < dest_size) {
+        strcpy(dest, src);
+        return;
+    }
+    
+    // 否则需要在UTF-8字符边界截断
+    size_t copy_len = dest_size - 1;
+    
+    // 向前查找，找到最后一个完整UTF-8字符的结尾
+    while (copy_len > 0) {
+        unsigned char c = (unsigned char)src[copy_len];
+        
+        // 如果是ASCII或UTF-8字符的起始字节，这里是安全边界
+        if ((c & 0x80) == 0 || (c & 0xC0) == 0xC0) {
+            break;
+        }
+        
+        // 这是一个UTF-8续字节(10xxxxxx)，继续向前找
+        copy_len--;
+    }
+    
+    // 复制并添加终止符
+    memcpy(dest, src, copy_len);
+    dest[copy_len] = '\0';
+}
+
 int ffi_get_document(uintptr_t index_ptr,
                      uint32_t doc_id,
                      char* out_title,
@@ -515,12 +548,9 @@ int ffi_get_document(uintptr_t index_ptr,
         return -1;
     }
     
-    // 安全复制字符串
-    strncpy(out_title, doc->title, title_size - 1);
-    out_title[title_size - 1] = '\0';
-    
-    strncpy(out_content, doc->content, content_size - 1);
-    out_content[content_size - 1] = '\0';
+    // 使用UTF-8安全的复制函数
+    utf8_safe_copy(out_title, doc->title, title_size);
+    utf8_safe_copy(out_content, doc->content, content_size);
     
     return 0;
 }
