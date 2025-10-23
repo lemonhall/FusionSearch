@@ -82,8 +82,11 @@ class CFusionSearch:
     def __init__(self, lib_path: str = "./libfusion.so"):
         """初始化C库"""
         # 根据操作系统选择库文件
-        if os.name == 'nt':  # Windows
-            lib_path = "./fusion.dll"
+        if not lib_path or lib_path == "./libfusion.so":
+            if os.name == 'nt':  # Windows
+                lib_path = "./fusion.dll"
+            else:  # Linux/WSL
+                lib_path = "./libfusion.so"
         
         if not os.path.exists(lib_path):
             raise FileNotFoundError(

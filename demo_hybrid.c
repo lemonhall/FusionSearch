@@ -115,46 +115,12 @@ int main(int argc, char* argv[]) {
     InvertedIndex* index = index_create();
     Tokenizer* tokenizer = tokenizer_create(dictionary);
     
-    // 自动检测向量维度
-    VectorIndex* vectorIndex = NULL;
-    FILE* test_file = fopen(input_file, "r");
-    if (test_file) {
-        char test_line[65536];
-        if (fgets(test_line, sizeof(test_line), test_file)) {
-            // 查找embedding数组并计数
-            const char* embed_start = strstr(test_line, "\"embedding\": [");
-            if (embed_start) {
-                embed_start += strlen("\"embedding\": [");
-                uint32_t dim = 0;
-                const char* ptr = embed_start;
-                
-                while (*ptr && *ptr != ']') {
-                    // 跳过空白和逗号
-                    while (*ptr && (isspace(*ptr) || *ptr == ',')) ptr++;
-                    if (*ptr == ']') break;
-                    
-                    // 找到一个数字
-                    char* end;
-                    strtof(ptr, &end);
-                    if (ptr != end) {
-                        dim++;
-                        ptr = end;
-                    } else {
-                        break;
-                    }
-                }
-                
-                if (dim > 0) {
-                    printf("✓ 检测到向量维度: %u\n", dim);
-                    vectorIndex = vector_index_create(dim);
-                }
-            }
-        }
-        fclose(test_file);
-    }
-    
-    if (!vectorIndex) {
-        printf("⚠ 未检测到向量数据，将仅加载BM25索引\n");
+    // 创建1024维向量索引（BAAI/bge-m3标准维度）
+    VectorIndex* vectorIndex = vector_index_create(1024);
+    if (vectorIndex) {
+        printf("✓ 创建向量索引: 1024维\n");
+    } else {
+        printf("⚠ 向量索引创建失败，将仅加载BM25索引\n");
     }
     printf("\n");
     
