@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "trie.h"
 #include "tokenizer.h"
 #include "cjk_tokenizer.h"
@@ -113,7 +114,49 @@ int main(int argc, char* argv[]) {
     Trie* dictionary = trie_create();
     InvertedIndex* index = index_create();
     Tokenizer* tokenizer = tokenizer_create(dictionary);
-    VectorIndex* vectorIndex = vector_index_create(1024);  // 假设1024维
+    
+    // 自动检测向量维度
+    VectorIndex* vectorIndex = NULL;
+    FILE* test_file = fopen(input_file, "r");
+    if (test_file) {
+        char test_line[65536];
+        if (fgets(test_line, sizeof(test_line), test_file)) {
+            // 查找embedding数组并计数
+            const char* embed_start = strstr(test_line, "\"embedding\": [");
+            if (embed_start) {
+                embed_start += strlen("\"embedding\": [");
+                uint32_t dim = 0;
+                const char* ptr = embed_start;
+                
+                while (*ptr && *ptr != ']') {
+                    // 跳过空白和逗号
+                    while (*ptr && (isspace(*ptr) || *ptr == ',')) ptr++;
+                    if (*ptr == ']') break;
+                    
+                    // 找到一个数字
+                    char* end;
+                    strtof(ptr, &end);
+                    if (ptr != end) {
+                        dim++;
+                        ptr = end;
+                    } else {
+                        break;
+                    }
+                }
+                
+                if (dim > 0) {
+                    printf("✓ 检测到向量维度: %u\n", dim);
+                    vectorIndex = vector_index_create(dim);
+                }
+            }
+        }
+        fclose(test_file);
+    }
+    
+    if (!vectorIndex) {
+        printf("⚠ 未检测到向量数据，将仅加载BM25索引\n");
+    }
+    printf("\n");
     
     printf("\n========================================\n");
     printf("加载文档和向量...\n");

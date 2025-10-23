@@ -41,7 +41,7 @@ class EmbeddingAPI:
             )
         
         self.api_url = "https://api.siliconflow.cn/v1/embeddings"
-        self.model = "BAAI/bge-large-zh-v1.5"  # 1024维
+        self.model = "BAAI/bge-m3"  # 1024维，免费
     
     def get_embedding(self, text: str) -> List[float]:
         """调用API获取文本向量"""
@@ -230,7 +230,7 @@ class FusionSearchEngine:
     
     def __init__(
         self,
-        jsonl_file: str = "recipes_with_embeddings.jsonl",
+        jsonl_file: str = "data/recipes_vector.jsonl",
         vector_file: str = "vectors.bin",
         lib_path: str = "./libfusion.so"
     ):

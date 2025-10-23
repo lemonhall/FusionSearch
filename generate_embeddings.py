@@ -22,7 +22,8 @@ API_URL = "https://api.siliconflow.cn/v1/embeddings"
 API_KEY = os.getenv("SILICONFLOW_API_KEY", "")  # 从环境变量读取
 
 # 模型选择
-EMBEDDING_MODEL = "BAAI/bge-large-zh-v1.5"  # 1024维，中文优化
+EMBEDDING_MODEL = "BAAI/bge-m3"  # 1024维，免费
+# EMBEDDING_MODEL = "BAAI/bge-large-zh-v1.5"  # 1024维，中文优化（付费）
 # EMBEDDING_MODEL = "BAAI/bge-small-zh-v1.5"  # 512维，轻量级
 
 

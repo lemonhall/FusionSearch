@@ -43,7 +43,7 @@ class EmbeddingAPI:
             )
         
         self.api_url = "https://api.siliconflow.cn/v1/embeddings"
-        self.model = "BAAI/bge-large-zh-v1.5"  # 1024维
+        self.model = "BAAI/bge-m3"  # 1024维，免费
     
     def get_embedding(self, text: str) -> np.ndarray:
         """

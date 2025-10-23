@@ -21,7 +21,7 @@ from typing import List
 # API 配置
 API_URL = "https://api.siliconflow.cn/v1/embeddings"
 API_KEY = os.getenv("SILICONFLOW_API_KEY", "")
-EMBEDDING_MODEL = "BAAI/bge-large-zh-v1.5"  # 1024维
+EMBEDDING_MODEL = "BAAI/bge-m3"  # 1024维，免费
 
 
 def generate_embedding(text: str, api_key: str) -> List[float]:
