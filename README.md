@@ -116,13 +116,18 @@ make clean
 - [x] **文件加载功能** (TSV/CSV/JSONL) ⭐⭐ （新增）
 
 ### 进行中 ⏳
+- [ ] **中日韩（CJK）分词集成** - 基于 ICU (International Components for Unicode) ⭐
 - [ ] PHRASE 搜索（精确短语匹配）
 
 ### 计划中 🔜
-- [ ] 中文分词（Jieba/HMM）
+- [ ] **Bigram 分词增强** - 提升中文词组识别精度（可选）
 - [ ] SQLite FTS5 集成
 - [ ] 性能优化
 - [ ] iOS/Android 交叉编译
+
+### 技术方案备选
+- **N-gram 纯 C 实现** - 零依赖、< 50KB，适合极致轻量场景
+- **Bigram 增强方案** - 在 ICU 基础上增加二元组，提升中文词组识别
 
 ---
 

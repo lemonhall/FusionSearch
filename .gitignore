@@ -54,3 +54,7 @@ coverage/
 # IDE debug files
 .gdb_history
 .lldb_history
+
+# External project directories (for reference/testing only)
+sqlite-icu-tokenizer/
+icu/

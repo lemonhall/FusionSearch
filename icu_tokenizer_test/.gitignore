@@ -1,0 +1,22 @@
+# 编译输出
+*.o
+test_icu
+*.exe
+*.out
+
+# 调试文件
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+Thumbs.db
