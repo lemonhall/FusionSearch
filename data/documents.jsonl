@@ -1,0 +1,10 @@
+{"title": "Blockchain Technology", "content": "Blockchain is a distributed ledger technology that records transactions in linked blocks. It provides immutability, transparency, and decentralization for applications like cryptocurrencies and smart contracts."}
+{"title": "Smart Contracts", "content": "Smart contracts are self-executing programs on blockchain platforms like Ethereum. They automate transactions and enforce agreements without intermediaries."}
+{"title": "Natural Language Processing", "content": "Natural Language Processing enables computers to understand and process human language. Applications include sentiment analysis, machine translation, and question answering systems."}
+{"title": "Computer Vision", "content": "Computer vision uses algorithms to enable machines to interpret visual information from images and videos. Applications include object detection, facial recognition, and autonomous vehicles."}
+{"title": "Deep Learning", "content": "Deep learning uses neural networks with multiple layers to learn complex patterns. Convolutional neural networks and recurrent neural networks are popular architectures."}
+{"title": "Transfer Learning", "content": "Transfer learning applies knowledge from one task to another. Pre-trained models can be fine-tuned for specific tasks, reducing training time and improving performance."}
+{"title": "Model Deployment", "content": "Deploying machine learning models involves containerization, monitoring, and scaling. Tools like TensorFlow Serving and KServe enable production deployments."}
+{"title": "Big Data Processing", "content": "Big data processing frameworks like Hadoop and Spark enable analysis of massive datasets. Distributed computing enables processing of data too large for single machines."}
+{"title": "Stream Processing", "content": "Stream processing frameworks like Kafka and Flink process continuous data streams in real-time. Applications include fraud detection and real-time analytics."}
+{"title": "Data Warehousing", "content": "Data warehouses consolidate data from multiple sources for analytics. Snowflake and Amazon Redshift are modern cloud-based data warehouses."}

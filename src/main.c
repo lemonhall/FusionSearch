@@ -5,6 +5,7 @@
 #include "tokenizer.h"
 #include "index.h"
 #include "search.h"
+#include "file_loader.h"
 #include "utils.h"
 
 // Sample documents for testing
@@ -78,9 +79,10 @@ void display_menu(void) {
     printf("2. Perform OR search (any term matches)\n");
     printf("3. Perform BM25 search (relevance ranking)\n");
     printf("4. Perform PHRASE search (exact phrase match)\n");
-    printf("5. View index statistics\n");
-    printf("6. View dictionary contents\n");
-    printf("7. Exit\n");
+    printf("5. Load documents from file\n");
+    printf("6. View index statistics\n");
+    printf("7. View dictionary contents\n");
+    printf("8. Exit\n");
     printf("Enter your choice: ");
 }
 
@@ -174,6 +176,84 @@ void perform_search(SearchEngine* engine, InvertedIndex* index, SearchMode mode)
 }
 
 /**
+ * Load documents from file
+ */
+void load_documents(InvertedIndex* index, Tokenizer* tokenizer, uint32_t startDocId) {
+    char filepath[256];
+    char buffer[10];
+    char choice;
+    
+    printf("\n=== Load Documents from File ===\n");
+    printf("File format options:\n");
+    printf("1. TSV (Tab-separated: title\\tcontent)\n");
+    printf("2. CSV (Comma-separated: title,content)\n");
+    printf("3. JSONL (JSON Lines: {\"title\": \"...\", \"content\": \"...\"})\n");
+    printf("\nEnter format (1-3): ");
+    
+    fgets(buffer, sizeof(buffer), stdin);
+    choice = buffer[0];
+    while (getchar() != '\n');  // Clear input buffer
+    
+    printf("Enter file path (or press Enter for default): ");
+    if (fgets(filepath, sizeof(filepath), stdin)) {
+        // Remove trailing newline
+        size_t len = strlen(filepath);
+        if (len > 0 && filepath[len - 1] == '\n') {
+            filepath[len - 1] = '\0';
+            len--;
+        }
+    }
+    
+    // Use default files if empty
+    if (strlen(filepath) == 0) {
+        switch (choice) {
+            case '1':
+                strcpy(filepath, "data/documents.tsv");
+                break;
+            case '2':
+                strcpy(filepath, "data/documents.csv");
+                break;
+            case '3':
+                strcpy(filepath, "data/documents.jsonl");
+                break;
+            default:
+                printf("Invalid choice!\n");
+                return;
+        }
+    }
+    
+    printf("\nLoading documents from: %s\n", filepath);
+    printf("========================================\n");
+    
+    int result = -1;
+    
+    switch (choice) {
+        case '1':
+            result = file_loader_load_documents(filepath, index, tokenizer, startDocId);
+            break;
+        case '2':
+            result = file_loader_load_csv(filepath, index, tokenizer, startDocId);
+            break;
+        case '3':
+            result = file_loader_load_jsonl(filepath, index, tokenizer, startDocId);
+            break;
+        default:
+            printf("Invalid choice!\n");
+            return;
+    }
+    
+    printf("========================================\n");
+    
+    if (result > 0) {
+        printf("\n✅ Successfully loaded %d documents\n", result);
+        index_print_stats(index);
+    } else {
+        printf("\n❌ Failed to load documents\n");
+        printf("Error: %s\n", file_loader_get_error());
+    }
+}
+
+/**
  * Main function
  */
 int main(void) {
@@ -224,14 +304,18 @@ int main(void) {
                 break;
             
             case 5:
-                index_print_stats(index);
+                load_documents(index, tokenizer, (uint32_t)index->totalDocs);
                 break;
             
             case 6:
-                trie_print(dictionary);
+                index_print_stats(index);
                 break;
             
             case 7:
+                trie_print(dictionary);
+                break;
+            
+            case 8:
                 printf("Exiting...\n");
                 goto cleanup;
             

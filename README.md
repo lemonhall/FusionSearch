@@ -23,9 +23,10 @@ FusionSearch/
 │   ├── tokenizer.h      # 分词器
 │   ├── index.h          # 倒排索引
 │   ├── search.h         # 搜索引擎
-│   ├── bm25.h           # BM25 排序算法（新增）
-│   ├── snippet.h        # Snippet 生成 + 高亮（新增）
-│   ├── test.h           # 单元测试框架（新增）
+│   ├── bm25.h           # BM25 排序算法
+│   ├── snippet.h        # Snippet 生成 + 高亮
+│   ├── file_loader.h    # 文件加载（新增）
+│   ├── test.h           # 单元测试框架
 │   └── utils.h          # 工具函数
 ├── src/                 # 源文件（实现）
 │   ├── main.c           # 主程序 + 菜单
@@ -34,15 +35,22 @@ FusionSearch/
 │   ├── index.c          # 倒排索引实现 (~150行)
 │   ├── search.c         # 搜索引擎实现 (~400行)
 │   ├── bm25.c           # BM25 实现 (~100行)
-│   ├── snippet.c        # Snippet 实现 (~150行，新增）
-│   ├── test.c           # 测试框架实现（新增）
-│   ├── test_suite.c     # 单元测试集合（新增）
+│   ├── snippet.c        # Snippet 实现 (~150行)
+│   ├── file_loader.c    # 文件加载实现 (~250行，新增）
+│   ├── test.c           # 测试框架实现
+│   ├── test_suite.c     # 单元测试集合
 │   └── utils.c          # 工具函数 (~250行)
-├── data/                # 数据文件（词典、文档）
+├── data/                # 数据文件（新增）
+│   ├── documents.tsv    # TSV 格式文档 (20 个)
+│   ├── documents.csv    # CSV 格式文档 (15 个)
+│   └── documents.jsonl  # JSON Lines 格式文档 (10 个)
 ├── .gitignore           # Git 忽略配置
 ├── Makefile             # 编译配置
 ├── CHANGELOG.md         # 版本变更记录
-└── README.md            # 本文件
+├── README.md            # 本文件
+├── FILE_LOADING.md      # 文件加载指南（新增）
+├── SNIPPET_GUIDE.md     # Snippet 详细说明
+└── FEATURES_SUMMARY.md  # 功能总结
 ```
 
 ---
@@ -96,7 +104,7 @@ make clean
 - [x] 倒排索引框架 + 文档存储
 - [x] AND/OR 搜索逻辑实现
 - [x] **TF-IDF 排序算法** ⭐
-- [x] **BM25 排序算法** ⭐⭐ （新增）
+- [x] **BM25 排序算法** ⭐⭐ 
 - [x] 菜单驱动的交互界面
 - [x] 5 个样本文档自动加载
 - [x] 搜索结果展示（包含标题、内容片段）
@@ -104,13 +112,13 @@ make clean
 - [x] 编译成功（仅有未使用参数警告）
 - [x] **调试输出**（显示分词和索引状态）
 - [x] **单元测试框架** + 测试用例
-- [x] **Snippet 生成** + **关键词高亮** ⭐⭐⭐ （新增）
+- [x] **Snippet 生成** + **关键词高亮** ⭐⭐⭐
+- [x] **文件加载功能** (TSV/CSV/JSONL) ⭐⭐ （新增）
 
 ### 进行中 ⏳
 - [ ] PHRASE 搜索（精确短语匹配）
 
 ### 计划中 🔜
-- [ ] 文件加载（词典、文档）
 - [ ] 中文分词（Jieba/HMM）
 - [ ] SQLite FTS5 集成
 - [ ] 性能优化
@@ -140,9 +148,10 @@ make
 2. OR 搜索      - 任一关键词出现即可
 3. BM25 搜索    - BM25 相关性排序（推荐）
 4. PHRASE 搜索  - 精确短语匹配（待实现）
-5. 索引统计     - 查看索引统计信息
-6. 字典内容     - 查看所有分词结果
-7. 退出
+5. 加载文件     - 从 TSV/CSV/JSONL 文件加载文档
+6. 索引统计     - 查看索引统计信息
+7. 字典内容     - 查看所有分词结果
+8. 退出
 ```
 
 ### 试用示例
@@ -364,6 +373,6 @@ MIT License
 FusionSearch 跨平台搜索引擎项目
 
 **创建时间**: 2025-10-24  
-**当前版本**: 0.5.0 (Snippet 生成 + 关键词高亮完成)  
+**当前版本**: 0.6.0 (文件加载功能完成)  
 **编译环境**: WSL2 Ubuntu + GCC  
 **最后更新**: 2025-10-24

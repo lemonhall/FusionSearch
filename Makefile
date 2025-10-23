@@ -5,9 +5,9 @@ CFLAGS = -Wall -Wextra -std=c99 -g -Iinclude -D_POSIX_C_SOURCE=199309L
 LDFLAGS = -lm
 
 # Source files
-SOURCES = src/main.c src/trie.c src/tokenizer.c src/index.c src/search.c src/bm25.c src/snippet.c src/utils.c
-TEST_SOURCES = src/test_suite.c src/trie.c src/tokenizer.c src/index.c src/search.c src/bm25.c src/snippet.c src/utils.c src/test.c
-HEADERS = include/trie.h include/tokenizer.h include/index.h include/search.h include/bm25.h include/snippet.h include/utils.h include/test.h
+SOURCES = src/main.c src/trie.c src/tokenizer.c src/index.c src/search.c src/bm25.c src/snippet.c src/file_loader.c src/utils.c
+TEST_SOURCES = src/test_suite.c src/trie.c src/tokenizer.c src/index.c src/search.c src/bm25.c src/snippet.c src/file_loader.c src/utils.c src/test.c
+HEADERS = include/trie.h include/tokenizer.h include/index.h include/search.h include/bm25.h include/snippet.h include/file_loader.h include/utils.h include/test.h
 
 # Object files
 OBJECTS = $(SOURCES:.c=.o)

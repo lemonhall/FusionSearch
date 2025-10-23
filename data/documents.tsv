@@ -1,0 +1,43 @@
+# Sample documents in TSV format (tab-separated)
+# Format: title\tcontent
+# Lines starting with # are comments
+
+Python Basics	Python is a high-level dynamically typed programming language created by Guido van Rossum in 1991. It emphasizes code readability and simplicity, making it an excellent choice for beginners.
+
+Python Advanced	Advanced Python topics include decorators, generators, context managers, and metaclasses. Understanding these concepts will help you write more efficient and elegant code.
+
+Web Development with Python	Python has excellent frameworks for web development. Django is a full-featured framework, while Flask is lightweight and flexible. Both are widely used in production environments.
+
+JavaScript Fundamentals	JavaScript is a dynamic programming language designed for web browsers. It allows developers to add interactive behavior to websites and create responsive user interfaces.
+
+JavaScript Frameworks	Modern JavaScript development relies on frameworks like React, Vue.js, and Angular. These frameworks help manage complex user interfaces and improve code organization.
+
+Data Science with Python	Python is the dominant language in data science and machine learning. Libraries like NumPy, Pandas, and Scikit-learn provide powerful tools for data analysis and modeling.
+
+C Language Basics	C is a procedural programming language created in the 1970s. It provides low-level memory access through pointers and is known for its efficiency and control.
+
+C Programming Techniques	Advanced C programming includes techniques like memory management, pointer arithmetic, and bit manipulation. Mastering these concepts is essential for systems programming.
+
+Database Design	Relational database design involves normalization, indexing, and query optimization. Understanding these principles ensures efficient data storage and retrieval.
+
+SQL Fundamentals	SQL is the standard language for managing relational databases. Learn how to write efficient queries, design schemas, and manage transactions.
+
+Mobile App Development	Mobile development for iOS uses Swift or Objective-C, while Android uses Java or Kotlin. Cross-platform frameworks like React Native and Flutter are becoming increasingly popular.
+
+Cloud Computing	Cloud platforms like AWS, Azure, and Google Cloud provide scalable infrastructure for modern applications. Understanding cloud architecture is crucial for building distributed systems.
+
+Machine Learning Basics	Machine learning algorithms learn patterns from data without being explicitly programmed. Common algorithms include decision trees, neural networks, and support vector machines.
+
+DevOps Practices	DevOps combines development and operations to improve collaboration and efficiency. Key practices include continuous integration, continuous deployment, and infrastructure as code.
+
+Software Architecture	Good software architecture provides structure, scalability, and maintainability. Common patterns include MVC, microservices, and event-driven architectures.
+
+Version Control with Git	Git is a distributed version control system essential for team development. Learn branching strategies, merging, and collaboration workflows.
+
+Testing Strategies	Software testing includes unit tests, integration tests, and end-to-end tests. Test-driven development and continuous testing improve code quality and reliability.
+
+Performance Optimization	Optimizing application performance involves profiling, caching, and algorithmic improvements. Understanding performance bottlenecks is key to building scalable systems.
+
+Security Best Practices	Application security includes input validation, authentication, encryption, and secure coding practices. Security should be considered throughout the development lifecycle.
+
+API Design	Designing robust APIs involves choosing appropriate HTTP methods, status codes, and documentation. RESTful APIs and GraphQL are popular API design paradigms.
