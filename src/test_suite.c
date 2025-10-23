@@ -6,6 +6,7 @@
 #include "tokenizer.h"
 #include "index.h"
 #include "search.h"
+#include "bm25.h"
 
 /**
  * Test Trie data structure
@@ -230,6 +231,101 @@ void test_tfidf_scoring(void) {
 }
 
 /**
+ * Test BM25 IDF Calculation
+ */
+void test_bm25_idf(void) {
+    TestSuite* suite = test_suite_create("BM25 IDF Calculation");
+    
+    // Test: IDF calculation
+    float idf1 = bm25_calculate_idf(10, 1);  // Rare term
+    float idf2 = bm25_calculate_idf(10, 5);  // Common term
+    
+    assert_true(suite, "IDF for rare term > common term", idf1 > idf2);
+    assert_true(suite, "IDF score > 0", idf1 > 0.0f);
+    
+    // Test: Edge cases
+    float idf_all = bm25_calculate_idf(10, 10);  // Appears in all docs
+    assert_true(suite, "IDF for ubiquitous term is low", idf_all < idf1);
+    
+    test_suite_print_results(suite);
+    test_suite_destroy(suite);
+}
+
+/**
+ * Test BM25 Scoring
+ */
+void test_bm25_scoring(void) {
+    TestSuite* suite = test_suite_create("BM25 Scoring");
+    
+    BM25Params* params = bm25_params_create();
+    float idf = 2.0f;
+    float avgLen = 100.0f;
+    
+    // Test: Higher term frequency gives higher score
+    float score1 = bm25_calculate_score(1, 100, avgLen, idf, params);
+    float score2 = bm25_calculate_score(5, 100, avgLen, idf, params);
+    assert_true(suite, "Higher TF = higher BM25 score", score2 > score1);
+    
+    // Test: Shorter docs get slight boost
+    float score3 = bm25_calculate_score(1, 50, avgLen, idf, params);
+    float score4 = bm25_calculate_score(1, 150, avgLen, idf, params);
+    assert_true(suite, "Shorter docs get slight boost", score3 > score4);
+    
+    // Test: Score saturates with term frequency
+    float score5 = bm25_calculate_score(10, 100, avgLen, idf, params);
+    float score6 = bm25_calculate_score(100, 100, avgLen, idf, params);
+    assert_true(suite, "Score saturates (sublinear growth)", 
+                (score6 - score5) < (score2 - score1));
+    
+    bm25_params_destroy(params);
+    test_suite_print_results(suite);
+    test_suite_destroy(suite);
+}
+
+/**
+ * Test BM25 Search
+ */
+void test_search_bm25(void) {
+    TestSuite* suite = test_suite_create("Search Engine - BM25 Mode");
+    
+    // Setup
+    Trie* dict = trie_create();
+    InvertedIndex* index = index_create();
+    Tokenizer* tokenizer = tokenizer_create(dict);
+    SearchEngine* engine = search_engine_create(index, tokenizer);
+    
+    // Add documents with different term frequencies
+    const char* doc1_tokens[] = {"python", "programming", "language", "python", "python"};
+    const char* doc2_tokens[] = {"java", "programming", "language"};
+    const char* doc3_tokens[] = {"python", "web", "development"};
+    
+    index_add_document(index, 0, "Doc1", "python programming language python python", doc1_tokens, 5);
+    index_add_document(index, 1, "Doc2", "java programming language", doc2_tokens, 3);
+    index_add_document(index, 2, "Doc3", "python web development", doc3_tokens, 3);
+    
+    // Test: BM25 search with term frequency weighting
+    SearchResultSet* results = search_engine_search(engine, "python programming", SEARCH_BM25, 10);
+    assert_equal_int(suite, "BM25 search 'python programming' returns results", 
+                    results->count > 0 ? 1 : 0, 1);
+    
+    // Doc1 should rank first (has multiple 'python' occurrences)
+    if (results->count > 0) {
+        assert_equal_int(suite, "Doc1 ranks first for 'python'", 0, (int)results->results[0].docId);
+    }
+    
+    search_free_results(results);
+    
+    // Cleanup
+    search_engine_destroy(engine);
+    tokenizer_destroy(tokenizer);
+    index_destroy(index);
+    trie_destroy(dict);
+    
+    test_suite_print_results(suite);
+    test_suite_destroy(suite);
+}
+
+/**
  * Main test runner
  */
 int main(void) {
@@ -244,6 +340,9 @@ int main(void) {
     test_search_and();
     test_search_or();
     test_tfidf_scoring();
+    test_bm25_idf();
+    test_bm25_scoring();
+    test_search_bm25();
     
     printf("\n");
     printf("╔════════════════════════════════════════╗\n");

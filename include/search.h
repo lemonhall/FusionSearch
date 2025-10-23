@@ -24,6 +24,7 @@ typedef struct {
 typedef enum {
     SEARCH_AND,      // All terms must match (intersection)
     SEARCH_OR,       // Any term matches (union)
+    SEARCH_BM25,     // BM25 ranking (best for most queries)
     SEARCH_PHRASE    // Exact phrase match
 } SearchMode;
 

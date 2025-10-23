@@ -1,5 +1,6 @@
 #include "search.h"
 #include "utils.h"
+#include "bm25.h"
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -225,6 +226,55 @@ static size_t search_or_query(SearchEngine* engine, const char** queryTerms,
     return resultCount;
 }
 
+/**
+ * Perform BM25 search - best for most queries
+ */
+static size_t search_bm25_query(SearchEngine* engine, const char** queryTerms,
+                               size_t termCount, uint32_t* results,
+                               size_t maxResults) {
+    if (!engine || !queryTerms || termCount == 0) return 0;
+    
+    InvertedIndex* index = engine->index;
+    
+    // Use a simple set to track unique document IDs
+    uint32_t uniqueDocs[MAX_DOCS] = {0};
+    size_t uniqueCount = 0;
+    
+    // For each query term, add all its documents to the result set
+    for (size_t i = 0; i < termCount; i++) {
+        uint32_t* postings = (uint32_t*)safe_malloc(sizeof(uint32_t) * MAX_DOCS_PER_WORD);
+        size_t postingCount = index_search_term(index, queryTerms[i],
+                                               postings, MAX_DOCS_PER_WORD);
+        
+        // Add each document to unique set (avoid duplicates)
+        for (size_t j = 0; j < postingCount; j++) {
+            uint32_t docId = postings[j];
+            bool alreadyExists = false;
+            
+            for (size_t k = 0; k < uniqueCount; k++) {
+                if (uniqueDocs[k] == docId) {
+                    alreadyExists = true;
+                    break;
+                }
+            }
+            
+            if (!alreadyExists && uniqueCount < MAX_DOCS) {
+                uniqueDocs[uniqueCount++] = docId;
+            }
+        }
+        
+        free(postings);
+    }
+    
+    // Copy results (limit to maxResults)
+    size_t resultCount = uniqueCount < maxResults ? uniqueCount : maxResults;
+    for (size_t i = 0; i < resultCount; i++) {
+        results[i] = uniqueDocs[i];
+    }
+    
+    return resultCount;
+}
+
 SearchResultSet* search_engine_search(SearchEngine* engine, const char* query,
                                      SearchMode mode, size_t maxResults) {
     if (!engine || !query) return NULL;
@@ -262,6 +312,11 @@ SearchResultSet* search_engine_search(SearchEngine* engine, const char* query,
                                       queryTokens->count, docIds, maxResults);
             break;
         
+        case SEARCH_BM25:
+            docCount = search_bm25_query(engine, (const char**)queryTokens->tokens,
+                                        queryTokens->count, docIds, maxResults);
+            break;
+        
         case SEARCH_PHRASE:
             // TODO: Implement phrase search
             docCount = 0;
@@ -271,9 +326,14 @@ SearchResultSet* search_engine_search(SearchEngine* engine, const char* query,
             docCount = 0;
     }
     
-    // Calculate scores using TF-IDF
+    // Calculate scores using TF-IDF or BM25
     InvertedIndex* index = engine->index;
     float avgDocLength = get_average_doc_length(index);
+    BM25Params* bm25Params = NULL;
+    
+    if (mode == SEARCH_BM25) {
+        bm25Params = bm25_params_create();
+    }
     
     for (size_t i = 0; i < docCount && i < MAX_SEARCH_RESULTS; i++) {
         uint32_t docId = docIds[i];
@@ -281,7 +341,7 @@ SearchResultSet* search_engine_search(SearchEngine* engine, const char* query,
         
         if (!doc) continue;
         
-        // Calculate TF-IDF score for this document
+        // Calculate score for this document
         float totalScore = 0.0f;
         
         for (size_t j = 0; j < queryTokens->count; j++) {
@@ -301,14 +361,28 @@ SearchResultSet* search_engine_search(SearchEngine* engine, const char* query,
             }
             
             if (termFreq > 0) {
-                // Calculate TF-IDF for this term
-                float tfidf = search_calculate_tfidf(
-                    termFreq, 
-                    (uint32_t)doc->wordCount,
-                    (uint32_t)postingCount,
-                    index->totalDocs
-                );
-                totalScore += tfidf;
+                float score = 0.0f;
+                
+                if (mode == SEARCH_BM25) {
+                    // Calculate BM25 score
+                    float idf = bm25_calculate_idf((uint32_t)index->totalDocs, 
+                                                  (uint32_t)postingCount);
+                    score = bm25_calculate_score((uint32_t)termFreq,
+                                               (uint32_t)doc->wordCount,
+                                               avgDocLength,
+                                               idf,
+                                               bm25Params);
+                } else {
+                    // Calculate TF-IDF score
+                    score = search_calculate_tfidf(
+                        termFreq, 
+                        (uint32_t)doc->wordCount,
+                        (uint32_t)postingCount,
+                        index->totalDocs
+                    );
+                }
+                
+                totalScore += score;
             }
         }
         
@@ -317,6 +391,11 @@ SearchResultSet* search_engine_search(SearchEngine* engine, const char* query,
         resultSet->results[resultSet->count].title = string_dup(doc->title);
         resultSet->results[resultSet->count].snippet = NULL;  // TODO: Generate snippet
         resultSet->count++;
+    }
+    
+    // Clean up BM25 parameters
+    if (bm25Params) {
+        bm25_params_destroy(bm25Params);
     }
     
     // Sort results by score (descending)

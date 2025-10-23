@@ -76,10 +76,11 @@ void display_menu(void) {
     printf("\n=== Search Engine Menu ===\n");
     printf("1. Perform AND search (all terms must match)\n");
     printf("2. Perform OR search (any term matches)\n");
-    printf("3. Perform PHRASE search (exact phrase match)\n");
-    printf("4. View index statistics\n");
-    printf("5. View dictionary contents\n");
-    printf("6. Exit\n");
+    printf("3. Perform BM25 search (relevance ranking)\n");
+    printf("4. Perform PHRASE search (exact phrase match)\n");
+    printf("5. View index statistics\n");
+    printf("6. View dictionary contents\n");
+    printf("7. Exit\n");
     printf("Enter your choice: ");
 }
 
@@ -120,7 +121,7 @@ void perform_search(SearchEngine* engine, InvertedIndex* index, SearchMode mode)
     // Debug: Show if terms exist in index
     for (size_t i = 0; i < queryTokens->count; i++) {
         size_t postingCount = 0;
-        PostingEntry** postings = index_get_postings(index, queryTokens->tokens[i], &postingCount);
+        index_get_postings(index, queryTokens->tokens[i], &postingCount);
         printf("  '%s' found in %zu documents\n", queryTokens->tokens[i], postingCount);
     }
     printf("\n");
@@ -136,7 +137,7 @@ void perform_search(SearchEngine* engine, InvertedIndex* index, SearchMode mode)
     if (results->count == 0) {
         printf("No results found.\n\n");
     } else {
-        printf("Found %zu results in %.2f ms:\n\n", results->count, 
+        printf("Found %zu results in %.2f ms:\n\n", results->count,
                endTime - startTime);
         
         for (size_t i = 0; i < results->count; i++) {
@@ -210,18 +211,22 @@ int main(void) {
                 break;
             
             case 3:
-                perform_search(engine, index, SEARCH_PHRASE);
+                perform_search(engine, index, SEARCH_BM25);
                 break;
             
             case 4:
-                index_print_stats(index);
+                perform_search(engine, index, SEARCH_PHRASE);
                 break;
             
             case 5:
-                trie_print(dictionary);
+                index_print_stats(index);
                 break;
             
             case 6:
+                trie_print(dictionary);
+                break;
+            
+            case 7:
                 printf("Exiting...\n");
                 goto cleanup;
             
