@@ -1,0 +1,56 @@
+# Compiled object files
+*.o
+*.obj
+
+# Executables
+search_engine
+test_runner
+*.exe
+*.out
+
+# Dependency files
+*.d
+*.dep
+
+# Build directories
+build/
+dist/
+obj/
+bin/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+.env
+
+# Debug files
+*.dSYM/
+*.su
+*.gch
+*.pch
+
+# Test coverage
+*.gcov
+*.gcda
+*.gcno
+coverage/
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+*~
+*.log
+
+# IDE debug files
+.gdb_history
+.lldb_history
