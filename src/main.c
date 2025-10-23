@@ -3,6 +3,7 @@
 #include <string.h>
 #include "trie.h"
 #include "tokenizer.h"
+#include "cjk_tokenizer.h"
 #include "index.h"
 #include "search.h"
 #include "file_loader.h"
@@ -39,6 +40,29 @@ SampleDoc SAMPLE_DOCUMENTS[] = {
         "Database Design Principles",
         "Databases store and manage data efficiently using SQL and other query languages. "
         "Proper database design involves normalization and indexing for optimal performance."
+    },
+    // 中文文档
+    {
+        "机器学习入门",
+        "机器学习是人工智能的核心技术。通过数据训练模型，计算机可以自动学习规律和模式。"
+        "深度学习是机器学习的一个重要分支，使用神经网络进行复杂模式识别。"
+    },
+    {
+        "数据库设计与优化",
+        "SQLite是一种轻量级关系型数据库，广泛应用于移动设备和嵌入式系统。"
+        "全文搜索功能可以大大提升数据查询的效率，BM25算法是搜索排序的金标准。"
+    },
+    // 日文文档
+    {
+        "日本語の全文検索",
+        "これは日本語のテスト文書です。全文検索エンジンはデータベース内の文章を素早く検索できます。"
+        "SQLiteデータベースは軽量で高速です。機械学習と自然言語処理にも広く利用されています。"
+    },
+    // 混合语言文档
+    {
+        "Cross-language Search Engine",
+        "This search engine supports 多语言搜索 including English, 中文, and 日本語. "
+        "It uses ICU for 分词 and BM25 for ランキング. Perfect for international applications!"
     }
 };
 
@@ -259,8 +283,18 @@ void load_documents(InvertedIndex* index, Tokenizer* tokenizer, uint32_t startDo
 int main(void) {
     printf("========================================\n");
     printf("  Cross-platform Search Engine (C)\n");
-    printf("  English Version\n");
+    printf("  Multilingual Support: English + CJK\n");
     printf("========================================\n\n");
+    
+    // 初始化 CJK 分词器（如果可用）
+    if (cjk_is_available()) {
+        cjk_tokenizer_init("zh");  // 默认中文，会自动检测其他语言
+        printf("✓ CJK tokenizer enabled (ICU)\n");
+    } else {
+        printf("⚠ CJK tokenizer disabled (ICU not available)\n");
+        printf("  Only English tokenization will work\n");
+    }
+    printf("\n");
     
     // Create data structures
     Trie* dictionary = trie_create();
@@ -326,6 +360,7 @@ int main(void) {
     
 cleanup:
     // Cleanup
+    cjk_tokenizer_cleanup();  // 清理 CJK 分词器资源
     search_engine_destroy(engine);
     index_destroy(index);
     tokenizer_destroy(tokenizer);

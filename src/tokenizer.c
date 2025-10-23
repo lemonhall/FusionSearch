@@ -1,8 +1,30 @@
 #include "tokenizer.h"
+#include "cjk_tokenizer.h"
 #include "utils.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+/**
+ * 检测文本中是否包含 CJK 字符
+ */
+static bool contains_cjk(const char* text) {
+    if (!text) return false;
+    
+    const unsigned char* p = (const unsigned char*)text;
+    while (*p) {
+        // UTF-8 CJK 字符检测
+        // 中文: 0xE4-0xE9 (U+4E00-U+9FFF)
+        // 日文: 0xE3 (U+3040-U+309F, U+30A0-U+30FF)
+        // 韩文: 0xEA-0xED (U+AC00-U+D7AF)
+        if ((*p >= 0xE3 && *p <= 0xE9) || 
+            (*p >= 0xEA && *p <= 0xED)) {
+            return true;
+        }
+        p++;
+    }
+    return false;
+}
 
 bool tokenizer_is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
@@ -36,6 +58,12 @@ void tokenizer_destroy(Tokenizer* tokenizer) {
 TokenList* tokenizer_tokenize(Tokenizer* tokenizer, const char* text) {
     if (!tokenizer || !text) return NULL;
     
+    // 如果启用了 ICU 且文本包含 CJK 字符，使用 CJK 分词器
+    if (cjk_is_available() && contains_cjk(text)) {
+        return cjk_tokenize(text);
+    }
+    
+    // 否则使用默认的英文分词器
     TokenList* tokens = (TokenList*)safe_malloc(sizeof(TokenList));
     tokens->count = 0;
     
