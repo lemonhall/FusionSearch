@@ -106,7 +106,26 @@ void perform_search(SearchEngine* engine, InvertedIndex* index, SearchMode mode)
     const char* modeStr = mode == SEARCH_AND ? "AND" : 
                          mode == SEARCH_OR ? "OR" : "PHRASE";
     printf("\n[Searching] Query: \"%s\" | Mode: %s\n", query, modeStr);
-    printf("========================================\n\n");
+    printf("========================================\n");
+    
+    // Debug: Show tokenized query
+    Tokenizer* tokenizer = (Tokenizer*)engine->tokenizer;
+    TokenList* queryTokens = tokenizer_tokenize(tokenizer, query);
+    printf("Tokenized into %zu terms: ", queryTokens->count);
+    for (size_t i = 0; i < queryTokens->count; i++) {
+        printf("[%s] ", queryTokens->tokens[i]);
+    }
+    printf("\n");
+    
+    // Debug: Show if terms exist in index
+    for (size_t i = 0; i < queryTokens->count; i++) {
+        size_t postingCount = 0;
+        PostingEntry** postings = index_get_postings(index, queryTokens->tokens[i], &postingCount);
+        printf("  '%s' found in %zu documents\n", queryTokens->tokens[i], postingCount);
+    }
+    printf("\n");
+    
+    tokenizer_free_tokens(queryTokens);
     
     double startTime = get_time_ms();
     

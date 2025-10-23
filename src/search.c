@@ -80,12 +80,26 @@ char* search_generate_snippet(const char* content, const char** terms,
  * Compare function for qsort (sort by score descending)
  */
 static int search_result_compare(const void* a, const void* b) {
-    SearchResult* ra = (SearchResult*)a;
-    SearchResult* rb = (SearchResult*)b;
+    const SearchResult* ra = (const SearchResult*)a;
+    const SearchResult* rb = (const SearchResult*)b;
     
     if (ra->score > rb->score) return -1;
     if (ra->score < rb->score) return 1;
     return 0;
+}
+
+/**
+ * Calculate average document length in the index
+ */
+static float get_average_doc_length(InvertedIndex* index) {
+    if (!index || index->docStore->docCount == 0) return 0.0f;
+    
+    size_t totalWords = 0;
+    for (size_t i = 0; i < index->docStore->docCount; i++) {
+        totalWords += index->docStore->docs[i].wordCount;
+    }
+    
+    return (float)totalWords / (float)index->docStore->docCount;
 }
 
 /**
@@ -126,14 +140,13 @@ static size_t search_and_query(SearchEngine* engine, const char** queryTerms,
         }
     }
     
-    // Intersect all posting lists
-    // Start with first posting list
+    // Intersect all posting lists - start with first posting list
     for (size_t i = 0; i < postingCounts[0] && resultCount < maxResults; i++) {
         uint32_t docId = postingLists[0][i];
         bool inAllLists = true;
         
         // Check if docId is in all other posting lists
-        for (size_t j = 1; j < termCount; j++) {
+        for (size_t j = 1; j < termCount && inAllLists; j++) {
             bool found = false;
             for (size_t k = 0; k < postingCounts[j]; k++) {
                 if (postingLists[j][k] == docId) {
@@ -144,7 +157,6 @@ static size_t search_and_query(SearchEngine* engine, const char** queryTerms,
             
             if (!found) {
                 inAllLists = false;
-                break;
             }
         }
         
@@ -259,14 +271,58 @@ SearchResultSet* search_engine_search(SearchEngine* engine, const char* query,
             docCount = 0;
     }
     
-    // Convert document IDs to results
-    // For now, just store the doc IDs with default scores
+    // Calculate scores using TF-IDF
+    InvertedIndex* index = engine->index;
+    float avgDocLength = get_average_doc_length(index);
+    
     for (size_t i = 0; i < docCount && i < MAX_SEARCH_RESULTS; i++) {
-        resultSet->results[i].docId = docIds[i];
-        resultSet->results[i].score = 1.0f / (i + 1);  // Simple scoring: first result gets 1.0
-        resultSet->results[i].title = NULL;  // TODO: Get from document store
-        resultSet->results[i].snippet = NULL;
+        uint32_t docId = docIds[i];
+        Document* doc = index_get_document(index, docId);
+        
+        if (!doc) continue;
+        
+        // Calculate TF-IDF score for this document
+        float totalScore = 0.0f;
+        
+        for (size_t j = 0; j < queryTokens->count; j++) {
+            const char* term = queryTokens->tokens[j];
+            size_t postingCount = 0;
+            PostingEntry** postings = index_get_postings(index, term, &postingCount);
+            
+            if (!postings) continue;
+            
+            // Find term frequency in this document
+            uint32_t termFreq = 0;
+            for (size_t k = 0; k < postingCount; k++) {
+                if (postings[k]->docId == docId) {
+                    termFreq = postings[k]->frequency;
+                    break;
+                }
+            }
+            
+            if (termFreq > 0) {
+                // Calculate TF-IDF for this term
+                float tfidf = search_calculate_tfidf(
+                    termFreq, 
+                    (uint32_t)doc->wordCount,
+                    (uint32_t)postingCount,
+                    index->totalDocs
+                );
+                totalScore += tfidf;
+            }
+        }
+        
+        resultSet->results[resultSet->count].docId = docId;
+        resultSet->results[resultSet->count].score = totalScore;
+        resultSet->results[resultSet->count].title = string_dup(doc->title);
+        resultSet->results[resultSet->count].snippet = NULL;  // TODO: Generate snippet
         resultSet->count++;
+    }
+    
+    // Sort results by score (descending)
+    if (resultSet->count > 1) {
+        qsort(resultSet->results, resultSet->count, sizeof(SearchResult),
+              search_result_compare);
     }
     
     // Cleanup
