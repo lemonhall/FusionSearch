@@ -150,16 +150,21 @@ void perform_search(SearchEngine* engine, InvertedIndex* index, SearchMode mode)
                 printf("    DocID: %u\n", doc->docId);
                 printf("    Title: %s\n", doc->title);
                 
-                // Print snippet (first 100 characters)
-                size_t snippetLen = strlen(doc->content) > 100 ? 100 : strlen(doc->content);
-                printf("    Content: ");
-                for (size_t j = 0; j < snippetLen; j++) {
-                    printf("%c", doc->content[j]);
+                // Print snippet with keyword highlighting
+                if (results->results[i].snippet) {
+                    printf("    Snippet: %s\n", results->results[i].snippet);
+                } else {
+                    // Fallback: print content snippet
+                    size_t snippetLen = strlen(doc->content) > 100 ? 100 : strlen(doc->content);
+                    printf("    Content: ");
+                    for (size_t j = 0; j < snippetLen; j++) {
+                        printf("%c", doc->content[j]);
+                    }
+                    if (strlen(doc->content) > 100) {
+                        printf("...");
+                    }
+                    printf("\n");
                 }
-                if (strlen(doc->content) > 100) {
-                    printf("...");
-                }
-                printf("\n");
             }
             printf("\n");
         }

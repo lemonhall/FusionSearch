@@ -1,6 +1,7 @@
 #include "search.h"
 #include "utils.h"
 #include "bm25.h"
+#include "snippet.h"
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -52,29 +53,6 @@ float search_calculate_bm25(uint32_t termFreq, uint32_t docLength,
                        + (float)termFreq;
     
     return idf * (numerator / denominator);
-}
-
-char* search_generate_snippet(const char* content, const char** terms,
-                             size_t termCount, size_t snippetLength) {
-    if (!content) return NULL;
-    
-    char* snippet = (char*)safe_malloc(snippetLength + 1);
-    
-    // Simple implementation: just return first part of content
-    size_t copyLen = snippetLength < strlen(content) ? snippetLength : strlen(content);
-    strncpy(snippet, content, copyLen);
-    snippet[copyLen] = '\0';
-    
-    // Add ellipsis if content is longer
-    if (strlen(content) > snippetLength) {
-        if (copyLen >= 3) {
-            snippet[copyLen - 3] = '.';
-            snippet[copyLen - 2] = '.';
-            snippet[copyLen - 1] = '.';
-        }
-    }
-    
-    return snippet;
 }
 
 /**
@@ -389,7 +367,16 @@ SearchResultSet* search_engine_search(SearchEngine* engine, const char* query,
         resultSet->results[resultSet->count].docId = docId;
         resultSet->results[resultSet->count].score = totalScore;
         resultSet->results[resultSet->count].title = string_dup(doc->title);
-        resultSet->results[resultSet->count].snippet = NULL;  // TODO: Generate snippet
+        
+        // Generate snippet with keyword highlighting
+        resultSet->results[resultSet->count].snippet = snippet_generate(
+            doc->content,
+            (const char**)queryTokens->tokens,
+            queryTokens->count,
+            150,      // 150 character snippet
+            ">>"      // Highlight marker
+        );
+        
         resultSet->count++;
     }
     

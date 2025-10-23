@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "index.h"
+#include "snippet.h"
 
 #define MAX_QUERY_TERMS 100
 #define MAX_SEARCH_RESULTS 100
@@ -74,11 +75,5 @@ float search_calculate_tfidf(uint32_t termFreq, uint32_t docLength,
 float search_calculate_bm25(uint32_t termFreq, uint32_t docLength,
                             float avgDocLength, uint32_t docsWithTerm,
                             uint32_t totalDocs);
-
-/**
- * Generate snippet with highlighting
- */
-char* search_generate_snippet(const char* content, const char** terms,
-                             size_t termCount, size_t snippetLength);
 
 #endif // SEARCH_H
