@@ -20,9 +20,9 @@ else
 endif
 
 # Source files
-SOURCES = src/main.c src/trie.c src/tokenizer.c src/index.c src/search.c src/bm25.c src/snippet.c src/file_loader.c src/cjk_tokenizer.c src/utils.c
-TEST_SOURCES = src/test_suite.c src/trie.c src/tokenizer.c src/index.c src/search.c src/bm25.c src/snippet.c src/file_loader.c src/cjk_tokenizer.c src/utils.c src/test.c
-HEADERS = include/trie.h include/tokenizer.h include/index.h include/search.h include/bm25.h include/snippet.h include/file_loader.h include/cjk_tokenizer.h include/utils.h include/test.h
+SOURCES = src/main.c src/trie.c src/tokenizer.c src/index.c src/search.c src/bm25.c src/snippet.c src/file_loader.c src/cjk_tokenizer.c src/vector_index.c src/utils.c
+TEST_SOURCES = src/test_suite.c src/trie.c src/tokenizer.c src/index.c src/search.c src/bm25.c src/snippet.c src/file_loader.c src/cjk_tokenizer.c src/vector_index.c src/utils.c src/test.c
+HEADERS = include/trie.h include/tokenizer.h include/index.h include/search.h include/bm25.h include/snippet.h include/file_loader.h include/cjk_tokenizer.h include/vector_index.h include/utils.h include/test.h
 
 # Object files
 OBJECTS = $(SOURCES:.c=.o)
