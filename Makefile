@@ -4,6 +4,11 @@ CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -g -Iinclude -D_POSIX_C_SOURCE=199309L
 LDFLAGS = -lm
 
+# Cross-compilation for Windows
+MINGW_CC = x86_64-w64-mingw32-gcc
+MINGW_CFLAGS = -Wall -Wextra -std=c99 -g -Iinclude -D_POSIX_C_SOURCE=199309L -DENABLE_ICU -fPIC
+MINGW_LDFLAGS = -lm -static-libgcc
+
 # ICU support (optional)
 # Detect if ICU is available
 ICU_AVAILABLE := $(shell pkg-config --exists icu-uc icu-i18n 2>/dev/null && echo 1 || echo 0)
@@ -52,6 +57,21 @@ $(LIB_TARGET): $(filter-out src/main.o, $(OBJECTS))
 	$(CC) -shared $(filter-out src/main.o, $(OBJECTS)) -o $(LIB_TARGET) $(LDFLAGS)
 	@echo "Build complete: $(LIB_TARGET)"
 
+# Cross-compile Windows DLL using MinGW-w64
+windll: fusion.dll
+
+fusion.dll: $(SOURCES)
+	@echo "🔨 Cross-compiling Windows DLL..."
+	@if ! command -v $(MINGW_CC) >/dev/null 2>&1; then \
+		echo "❌ MinGW-w64 not found!"; \
+		echo "   Install: sudo apt install mingw-w64"; \
+		exit 1; \
+	fi
+	@echo "✅ MinGW-w64 found"
+	$(MINGW_CC) $(MINGW_CFLAGS) -shared $(filter-out src/main.c, $(SOURCES)) -o fusion.dll $(MINGW_LDFLAGS)
+	@echo "✅ Build complete: fusion.dll"
+	@file fusion.dll
+
 # Build executable
 $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) -o $(TARGET) $(LDFLAGS)
@@ -88,4 +108,4 @@ debug: clean $(TARGET) run
 # Rebuild everything
 rebuild: clean all
 
-.PHONY: all clean run debug rebuild test test-run
+.PHONY: all clean run debug rebuild test test-run lib windll
