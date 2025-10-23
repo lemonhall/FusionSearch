@@ -81,6 +81,13 @@ VectorResult* vector_search(VectorIndex* index,
                             size_t* result_count);
 
 /**
+ * @brief 释放向量检索结果
+ * 
+ * @param results 检索结果数组
+ */
+void vector_free_results(VectorResult* results);
+
+/**
  * @brief 计算余弦相似度
  * 
  * 公式: cosine_similarity(A, B) = dot(A, B) / (||A|| * ||B||)
@@ -114,5 +121,72 @@ uint32_t vector_index_count(const VectorIndex* index);
  * @return 向量维度
  */
 uint32_t vector_index_dimension(const VectorIndex* index);
+
+/**
+ * @brief 导出向量索引到二进制文件
+ * 
+ * 文件格式：
+ * - [4 bytes] count (uint32)
+ * - [4 bytes] dimension (uint32)
+ * - 对每个向量：
+ *   - [4 bytes] doc_id (uint32)
+ *   - [dimension * 4 bytes] embedding (float[])
+ * 
+ * @param index 向量索引
+ * @param file_path 输出文件路径
+ * @return 0 成功，-1 失败
+ */
+int vector_index_save(const VectorIndex* index, const char* file_path);
+
+/**
+ * @brief 从二进制文件加载向量索引
+ * 
+ * @param file_path 输入文件路径
+ * @return 加载的向量索引，失败返回 NULL
+ */
+VectorIndex* vector_index_load(const char* file_path);
+
+// ============================================================================
+// C FFI 导出接口（供 Python/Swift/Kotlin 调用）
+// ============================================================================
+
+/**
+ * @brief [FFI导出] 从文件加载向量索引（全局单例）
+ * 
+ * 供外部语言调用，返回全局索引指针地址
+ * 
+ * @param file_path 向量文件路径
+ * @return 索引指针地址（intptr），失败返回 0
+ */
+uintptr_t ffi_vector_index_load(const char* file_path);
+
+/**
+ * @brief [FFI导出] 执行向量检索
+ * 
+ * 供外部语言调用，直接传入float数组
+ * 返回：文档ID + 相似度（不返回向量，节省内存）
+ * 
+ * @param index_ptr 索引指针地址（由 ffi_vector_index_load 返回）
+ * @param query_embedding 查询向量数组
+ * @param dimension 向量维度
+ * @param k Top-K数量
+ * @param out_doc_ids [输出] 文档ID数组（调用者分配，至少k个元素）
+ * @param out_scores [输出] 相似度数组（调用者分配，至少k个元素）
+ * @return 实际返回结果数量
+ */
+size_t ffi_vector_search(uintptr_t index_ptr,
+                         const float* query_embedding,
+                         uint32_t dimension,
+                         uint32_t k,
+                         uint32_t* out_doc_ids,
+                         float* out_scores);
+
+/**
+ * @brief [FFI导出] 释放向量索引
+ * 
+ * @param index_ptr 索引指针地址
+ */
+void ffi_vector_index_free(uintptr_t index_ptr);
+
 
 #endif // VECTOR_INDEX_H

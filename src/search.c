@@ -414,3 +414,134 @@ void search_free_results(SearchResultSet* results) {
     free(results->results);
     free(results);
 }
+
+// ============================================================================
+// FFI 导出接口实现
+// ============================================================================
+
+#include <stdint.h>
+#include "file_loader.h"
+
+// 全局索引和引擎（简化版，生产环境应使用完整的生命周期管理）
+static InvertedIndex* g_index = NULL;
+static Tokenizer* g_tokenizer = NULL;
+static SearchEngine* g_engine = NULL;
+static Trie* g_dictionary = NULL;
+
+uintptr_t ffi_index_load(const char* jsonl_file) {
+    if (!jsonl_file) {
+        fprintf(stderr, "Error: NULL file path\n");
+        return 0;
+    }
+    
+    // 清理旧索引
+    if (g_engine) search_engine_destroy(g_engine);
+    if (g_index) index_destroy(g_index);
+    if (g_tokenizer) tokenizer_destroy(g_tokenizer);
+    if (g_dictionary) trie_destroy(g_dictionary);
+    
+    // 创建新索引
+    g_dictionary = trie_create();
+    g_index = index_create();
+    g_tokenizer = tokenizer_create(g_dictionary);
+    
+    // 加载JSONL文档
+    int doc_count = file_loader_load_jsonl(jsonl_file, g_index, g_tokenizer, 0);
+    
+    if (doc_count <= 0) {
+        fprintf(stderr, "Error: Failed to load documents: %s\n",
+                file_loader_get_error());
+        return 0;
+    }
+    
+    // 创建搜索引擎
+    g_engine = search_engine_create(g_index, g_tokenizer);
+    
+    printf("✓ Loaded %d documents for BM25 search\n", doc_count);
+    
+    return (uintptr_t)g_index;
+}
+
+size_t ffi_bm25_search(uintptr_t index_ptr,
+                       const char* query,
+                       uint32_t k,
+                       uint32_t* out_doc_ids,
+                       float* out_scores) {
+    if (!index_ptr || !query || !out_doc_ids || !out_scores) {
+        fprintf(stderr, "Error: NULL parameter in ffi_bm25_search\n");
+        return 0;
+    }
+    
+    if (!g_engine) {
+        fprintf(stderr, "Error: Search engine not initialized\n");
+        return 0;
+    }
+    
+    // 执行BM25搜索
+    SearchResultSet* results = search_engine_search(g_engine, query, SEARCH_BM25, k);
+    
+    if (!results) {
+        return 0;
+    }
+    
+    // 复制结果
+    size_t count = results->count;
+    for (size_t i = 0; i < count; i++) {
+        out_doc_ids[i] = results->results[i].docId;
+        out_scores[i] = results->results[i].score;
+    }
+    
+    search_free_results(results);
+    
+    return count;
+}
+
+int ffi_get_document(uintptr_t index_ptr,
+                     uint32_t doc_id,
+                     char* out_title,
+                     size_t title_size,
+                     char* out_content,
+                     size_t content_size) {
+    if (!index_ptr || !out_title || !out_content) {
+        fprintf(stderr, "Error: NULL parameter in ffi_get_document\n");
+        return -1;
+    }
+    
+    InvertedIndex* index = (InvertedIndex*)index_ptr;
+    Document* doc = index_get_document(index, doc_id);
+    
+    if (!doc) {
+        fprintf(stderr, "Error: Document %u not found\n", doc_id);
+        return -1;
+    }
+    
+    // 安全复制字符串
+    strncpy(out_title, doc->title, title_size - 1);
+    out_title[title_size - 1] = '\0';
+    
+    strncpy(out_content, doc->content, content_size - 1);
+    out_content[content_size - 1] = '\0';
+    
+    return 0;
+}
+
+void ffi_index_free(uintptr_t index_ptr) {
+    (void)index_ptr;  // 忽略参数，使用全局变量
+    
+    if (g_engine) {
+        search_engine_destroy(g_engine);
+        g_engine = NULL;
+    }
+    if (g_index) {
+        index_destroy(g_index);
+        g_index = NULL;
+    }
+    if (g_tokenizer) {
+        tokenizer_destroy(g_tokenizer);
+        g_tokenizer = NULL;
+    }
+    if (g_dictionary) {
+        trie_destroy(g_dictionary);
+        g_dictionary = NULL;
+    }
+}

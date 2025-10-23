@@ -213,3 +213,179 @@ uint32_t vector_index_count(const VectorIndex* index) {
 uint32_t vector_index_dimension(const VectorIndex* index) {
     return index ? index->dimension : 0;
 }
+
+int vector_index_save(const VectorIndex* index, const char* file_path) {
+    if (!index || !file_path) {
+        fprintf(stderr, "Error: NULL parameter in vector_index_save\n");
+        return -1;
+    }
+    
+    FILE* fp = fopen(file_path, "wb");
+    if (!fp) {
+        fprintf(stderr, "Error: Failed to open file for writing: %s\n", file_path);
+        return -1;
+    }
+    
+    // 写入头部：count 和 dimension
+    if (fwrite(&index->count, sizeof(uint32_t), 1, fp) != 1 ||
+        fwrite(&index->dimension, sizeof(uint32_t), 1, fp) != 1) {
+        fprintf(stderr, "Error: Failed to write header\n");
+        fclose(fp);
+        return -1;
+    }
+    
+    // 写入每个向量
+    for (uint32_t i = 0; i < index->count; i++) {
+        // 写入 doc_id
+        if (fwrite(&index->entries[i].doc_id, sizeof(uint32_t), 1, fp) != 1) {
+            fprintf(stderr, "Error: Failed to write doc_id\n");
+            fclose(fp);
+            return -1;
+        }
+        
+        // 写入 embedding
+        if (fwrite(index->entries[i].embedding, sizeof(float), index->dimension, fp) != index->dimension) {
+            fprintf(stderr, "Error: Failed to write embedding\n");
+            fclose(fp);
+            return -1;
+        }
+    }
+    
+    fclose(fp);
+    printf("✓ Saved %u vectors to %s\n", index->count, file_path);
+    return 0;
+}
+
+VectorIndex* vector_index_load(const char* file_path) {
+    if (!file_path) {
+        fprintf(stderr, "Error: NULL file_path\n");
+        return NULL;
+    }
+    
+    FILE* fp = fopen(file_path, "rb");
+    if (!fp) {
+        fprintf(stderr, "Error: Failed to open file for reading: %s\n", file_path);
+        return NULL;
+    }
+    
+    // 读取头部
+    uint32_t count, dimension;
+    if (fread(&count, sizeof(uint32_t), 1, fp) != 1 ||
+        fread(&dimension, sizeof(uint32_t), 1, fp) != 1) {
+        fprintf(stderr, "Error: Failed to read header\n");
+        fclose(fp);
+        return NULL;
+    }
+    
+    // 创建向量索引
+    VectorIndex* index = vector_index_create(dimension);
+    if (!index) {
+        fclose(fp);
+        return NULL;
+    }
+    
+    // 读取每个向量
+    for (uint32_t i = 0; i < count; i++) {
+        uint32_t doc_id;
+        if (fread(&doc_id, sizeof(uint32_t), 1, fp) != 1) {
+            fprintf(stderr, "Error: Failed to read doc_id\n");
+            vector_index_free(index);
+            fclose(fp);
+            return NULL;
+        }
+        
+        // 读取 embedding
+        float* embedding = malloc(dimension * sizeof(float));
+        if (!embedding) {
+            fprintf(stderr, "Error: Failed to allocate embedding\n");
+            vector_index_free(index);
+            fclose(fp);
+            return NULL;
+        }
+        
+        if (fread(embedding, sizeof(float), dimension, fp) != dimension) {
+            fprintf(stderr, "Error: Failed to read embedding\n");
+            free(embedding);
+            vector_index_free(index);
+            fclose(fp);
+            return NULL;
+        }
+        
+        // 添加到索引
+        if (vector_index_add(index, doc_id, embedding) != 0) {
+            fprintf(stderr, "Error: Failed to add vector to index\n");
+            free(embedding);
+            vector_index_free(index);
+            fclose(fp);
+            return NULL;
+        }
+        
+        free(embedding);  // vector_index_add 会复制数据
+    }
+    
+    fclose(fp);
+    printf("✓ Loaded %u vectors from %s\n", index->count, file_path);
+    return index;
+}
+
+void vector_free_results(VectorResult* results) {
+    if (results) {
+        free(results);
+    }
+}
+
+// ============================================================================
+// FFI 导出接口实现
+// ============================================================================
+
+#include <stdint.h>
+
+uintptr_t ffi_vector_index_load(const char* file_path) {
+    VectorIndex* index = vector_index_load(file_path);
+    return (uintptr_t)index;
+}
+
+size_t ffi_vector_search(uintptr_t index_ptr,
+                         const float* query_embedding,
+                         uint32_t dimension,
+                         uint32_t k,
+                         uint32_t* out_doc_ids,
+                         float* out_scores) {
+    if (!index_ptr || !query_embedding || !out_doc_ids || !out_scores) {
+        fprintf(stderr, "Error: NULL parameter in ffi_vector_search\n");
+        return 0;
+    }
+    
+    VectorIndex* index = (VectorIndex*)index_ptr;
+    
+    // 验证维度
+    if (index->dimension != dimension) {
+        fprintf(stderr, "Error: Dimension mismatch: expected %u, got %u\n",
+                index->dimension, dimension);
+        return 0;
+    }
+    
+    // 执行检索
+    size_t result_count = 0;
+    VectorResult* results = vector_search(index, query_embedding, k, &result_count);
+    
+    if (!results) {
+        return 0;
+    }
+    
+    // 复制结果到输出数组
+    for (size_t i = 0; i < result_count; i++) {
+        out_doc_ids[i] = results[i].doc_id;
+        out_scores[i] = results[i].similarity;
+    }
+    
+    free(results);
+    
+    return result_count;
+}
+
+void ffi_vector_index_free(uintptr_t index_ptr) {
+    if (index_ptr) {
+        vector_index_free((VectorIndex*)index_ptr);
+    }
+}

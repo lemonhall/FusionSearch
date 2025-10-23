@@ -31,9 +31,26 @@ TEST_OBJECTS = $(TEST_SOURCES:.c=.o)
 # Output
 TARGET = search_engine
 TEST_TARGET = test_runner
+LIB_TARGET = libfusion.so
+DEMO_TARGET = demo_hybrid
 
 # Default target
 all: $(TARGET)
+
+# Build demo program
+demo: $(DEMO_TARGET)
+
+$(DEMO_TARGET): demo_hybrid.o $(filter-out src/main.o, $(OBJECTS))
+	$(CC) demo_hybrid.o $(filter-out src/main.o, $(OBJECTS)) -o $(DEMO_TARGET) $(LDFLAGS)
+	@echo "Build complete: $(DEMO_TARGET)"
+
+# Build shared library for Python FFI
+lib: $(LIB_TARGET)
+
+$(LIB_TARGET): CFLAGS += -fPIC
+$(LIB_TARGET): $(filter-out src/main.o, $(OBJECTS))
+	$(CC) -shared $(filter-out src/main.o, $(OBJECTS)) -o $(LIB_TARGET) $(LDFLAGS)
+	@echo "Build complete: $(LIB_TARGET)"
 
 # Build executable
 $(TARGET): $(OBJECTS)
