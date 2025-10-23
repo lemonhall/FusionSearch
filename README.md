@@ -79,17 +79,37 @@ FusionSearch/
 
 ## 🚀 快速开始
 
-### 编译（Windows - MinGW）
-```powershell
+### 编译 C 共享库（WSL/Linux）
+```bash
+# 编译共享库
+wsl bash -c "cd /mnt/e/development/FusionSearch && make clean && make lib"
+
+# 拷贝为 Windows 可用的 DLL（如需）
+wsl bash -c "cd /mnt/e/development/FusionSearch && cp libfusion.so fusion.dll"
+```
+
+### 编译 C 命令行工具
+```bash
+# Linux/Mac
+make
+
+# Windows - MinGW
 mingw32-make
 ```
 
-### 编译（Linux/Mac）
+### 运行混合搜索引擎（Python）
 ```bash
-make
+# 设置 API 密钥
+export SILICONFLOW_API_KEY='your-api-key-here'
+
+# 生成向量文件
+python generate_vectors_bin.py
+
+# 启动搜索引擎
+python fusion_search.py
 ```
 
-### 运行
+### 运行 C 命令行工具
 ```bash
 ./search_engine
 # 或
@@ -121,20 +141,24 @@ make clean
 - [x] **单元测试框架** + 测试用例
 - [x] **Snippet 生成** + **关键词高亮** ⭐⭐⭐
 - [x] **文件加载功能** (TSV/CSV/JSONL) ⭐⭐
-- [x] **向量检索引擎** (余弦相似度 + Top-K) ⭐⭐⭐ **新增**
-- [x] **JSONL 混合加载** (BM25 + 向量同时构建) ⭐⭐ **新增**
+- [x] **向量检索引擎** (余弦相似度 + Top-K) ⭐⭐⭐
+- [x] **JSONL 混合加载** (BM25 + 向量同时构建) ⭐⭐
+- [x] **Python FFI 调用层** (ctypes 封装 C 共享库) ⭐⭐⭐ **新增**
+- [x] **混合搜索引擎** (Python 调度 + C 检索) ⭐⭐⭐⭐ **新增**
+- [x] **向量 API 集成** (SiliconFlow Embedding API) ⭐⭐ **新增**
+- [x] **UTF-8 安全处理** (中文文档查询支持) ⭐⭐ **新增**
+- [x] **融合排序实现** (RRF/加权融合策略) ⭐⭐⭐ **新增**
 
 ### 进行中 ⏳
-- [ ] **混合检索融合** - BM25 + 向量加权排序 ⭐⭐
-- [ ] **向量生成工具** - Python 脚本 + API 调用 ⭐
 - [ ] **中日韩（CJK）分词集成** - 基于 ICU (International Components for Unicode) ⭐
 - [ ] PHRASE 搜索（精确短语匹配）
+- [ ] 性能优化与压力测试
 
 ### 计划中 🔜
 - [ ] **Bigram 分词增强** - 提升中文词组识别精度（可选）
 - [ ] SQLite FTS5 集成
-- [ ] 性能优化
 - [ ] iOS/Android 交叉编译
+- [ ] Swift/Kotlin FFI 封装层
 
 ### 技术方案备选
 - **N-gram 纯 C 实现** - 零依赖、< 50KB，适合极致轻量场景
@@ -153,6 +177,8 @@ make clean
 - ✅ **暴力检索** - 适用于 < 10万文档（单次查询 ~10ms）
 - ✅ **混合加载** - 与 BM25 共享文档加载引擎
 - ✅ **JSONL 格式** - 支持带 embedding 字段的文档
+- ✅ **Python FFI 调用** - 通过 ctypes 调用 C 共享库
+- ✅ **UTF-8 安全字符串处理** - 正确处理中文文档截断问题
 
 ### 数据格式
 
@@ -601,6 +627,48 @@ MIT License
 FusionSearch 跨平台搜索引擎项目
 
 **创建时间**: 2025-10-24  
-**当前版本**: 0.6.0 (文件加载功能完成)  
+**当前版本**: 0.8.0 (混合搜索引擎完成) 🎉  
 **编译环境**: WSL2 Ubuntu + GCC  
 **最后更新**: 2025-10-24
+
+---
+
+## 🎉 版本 0.8.0 重大突破
+
+### 混合搜索架构完成！
+
+经过艰苦的调试和优化，终于实现了完整的混合搜索引擎架构：
+
+✅ **Python 调度层**：
+- 调用 SiliconFlow API 获取 Query 向量（BAAI/bge-m3，1024维）
+- 通过 ctypes FFI 调用 C 的 BM25 搜索
+- 通过 ctypes FFI 调用 C 的向量检索
+- 实现融合排序（RRF + 加权融合）
+- 返回最终混合搜索结果
+
+✅ **C 检索层**：
+- BM25 全文检索（只返回 doc_id + score）
+- 向量语义检索（只返回 doc_id + similarity）
+- 文档内容查询（UTF-8 安全字符串处理）
+- 共享库导出 FFI 接口
+
+### 解决的关键问题
+
+1. **向量维度问题**：统一使用 BAAI/bge-m3（1024维免费模型）
+2. **JSON 解析 Bug**：C 的 JSON 解析有问题，改用 Python 直接生成 `vectors.bin`
+3. **UTF-8 截断问题**：实现 UTF-8 安全的字符串复制函数，避免在多字节字符中间截断
+4. **跨语言调用**：成功实现 Python-C FFI 调用（ctypes）
+5. **架构职责分离**：
+   - Python：API 调用、融合排序
+   - C：文档加载、分词、BM25、向量检索
+
+### 技术亮点
+
+- **零向量传输**：C 不返回完整向量数据，只返回 doc_id + score
+- **UTF-8 边界检测**：智能识别 UTF-8 字符边界，避免截断
+- **二进制向量文件**：高效的向量存储格式（Python 生成，C 加载）
+- **模块化设计**：为 iOS/Android 移植奠定基础
+
+### 下一步
+
+准备好移植到 Swift (iOS) 和 Kotlin (Android) 了！🚀
