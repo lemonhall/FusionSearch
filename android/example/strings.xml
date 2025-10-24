@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">FusionSearch 示例</string>
+    
+    <!-- API 配置 -->
+    <string name="api_key">YOUR_SILICONFLOW_API_KEY_HERE</string>
+    
+    <!-- 提示文本 -->
+    <string name="hint_search">输入搜索内容</string>
+    <string name="btn_search">搜索</string>
+    <string name="status_initializing">正在初始化搜索引擎...</string>
+    <string name="status_ready">初始化完成！请输入搜索内容</string>
+    <string name="status_searching">搜索中...</string>
+    <string name="status_no_results">未找到结果</string>
+    
+    <!-- 搜索模式 -->
+    <string name="mode_bm25">BM25</string>
+    <string name="mode_vector">向量</string>
+    <string name="mode_hybrid">混合</string>
+    
+    <!-- 错误信息 -->
+    <string name="error_init_failed">初始化失败: %s</string>
+    <string name="error_search_failed">搜索失败: %s</string>
+</resources>
